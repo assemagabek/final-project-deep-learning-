@@ -1,0 +1,59 @@
+% Final Project by Assem Agabekova: The Power of Deep Learning for Disease Detection
+
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import numpy as np
+
+img_height, img_width = 128, 128
+batch_size = 32
+
+train_data_gen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
+
+train_generator = train_data_gen.flow_from_directory(directory='your_dataset_path', target_size=(img_height, img_width),
+                                                     class_mode='binary', batch_size=batch_size, subset='training')
+
+validation_generator = train_data_gen.flow_from_directory(directory='your_dataset_path', target_size=(img_height, img_width),
+                                                          class_mode='binary', batch_size=batch_size, subset='validation')
+
+model = Sequential()
+model.add(Conv2D(32, (3, 3), activation='relu', input_shape=(img_height, img_width, 3)))
+model.add(MaxPooling2D((2, 2)))
+model.add(Conv2D(64, (3, 3), activation='relu'))
+model.add(MaxPooling2D((2, 2)))
+model.add(Conv2D(128, (3, 3), activation='relu'))
+model.add(MaxPooling2D((2, 2)))
+model.add(Flatten())
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(1, activation='sigmoid'))
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+model.summary()
+
+history = model.fit(train_generator, epochs=10, validation_data=validation_generator)
+
+test_loss, test_accuracy = model.evaluate(validation_generator)
+print(f'Test Accuracy: {test_accuracy}')
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
+
+sample_image_path = 'path_to_your_sample_image'
+sample_img = tf.keras.preprocessing.image.load_img(sample_image_path, target_size=(img_height, img_width))
+sample_img_array = tf.keras.preprocessing.image.img_to_array(sample_img)
+sample_img_array = np.expand_dims(sample_img_array, axis=0)
+predictions = model.predict(sample_img_array)
+
+if predictions[0][0] > 0.5:
+    print("Prediction: Malignant")
+else:
+    print("Prediction: Benign")
